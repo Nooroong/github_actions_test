@@ -33,7 +33,7 @@ jobs:
     # env 파일 생성
     - name: create-env
       id: create-env
-      run: echo "$ENV_FILE" > .
+      run: echo "$ENV_FILE" > ./.env
       shell: bash
       env:
         ENV_FILE: ${{ secrets.ENV_FILE }}
