@@ -42,27 +42,39 @@ jobs:
     - name: Run Tests
       run: |
         python manage.py test
-  # cd:
-  #   name: 'Django CD'
-  #   needs: ci
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: EC2 ssh connection test
-  #     uses: appleboy/ssh-action@master
-  #     with:
-  #       host: ${{ secrets.SSH_HOST }}     # 연결할 EC2 
-  #       username: ${{ secrets.SSH_USERNAME }} # 사용자
-  #       key: ${{ secrets.SSH_PEM }}       # pem 파일 내용
-  #       command_timeout: 3m           # timeout 시간 설정
-  #       script: |
-  #         sudo apt-get update
-  #         sudo apt-get -y upgrade
-  #         cd {프로젝트 폴더 위치}
-  #         source {가상환경 이름}/bin/activate
-  #         git pull
-  #         sudo lsof -t -i tcp:8000 | xargs kill -9
-  #         pip install -r requirements.txt
-  #         python manage.py makemigrations 
-  #         python manage.py migrate
-  #         nohup gunicorn --bind 0.0.0.0:8000 {django 프로젝트명}.wsgi > nohup.out 2> nohup.err < /dev/null &
-  #         exit 0
+    
+    # ghcr에 로그인
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.PAT }}
+      
+    # 도커 이미지 빌드
+    - name: Build Docker image
+      run: |
+        docker build -t ghcr.io/${{ github.repository }}:latest .
+
+    # 이미지 푸시
+    - name: Push Docker image to ghcr
+      run: |
+        docker push ghcr.io/${{ github.repository }}:latest
+    
+    # 기존 컨테이너 종료 후 새 이미지 실행
+    - name: SSH to GCP VM and deploy container
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PEM }}
+        command_timeout: 3m
+        script: |
+          docker stop django-container || true
+          docker rm django-container || true
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker run -d \
+            --name django-container \
+            -p 8000:8000 \
+            --env-file /home/${{ secrets.SSH_USER }}/.env \
+            ghcr.io/${{ github.repository }}:latest
