@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - develop
+env:
+  REPONAME: ${{ github.repository }}
 jobs:
   ci:
     name: 'Django CI'
@@ -50,16 +52,21 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.PAT }}
+
+    # 도커 이미지 이름에 대문자가 들어갈 수 없으므로 레포 이름을 소문자로 변경
+    - name: Convert repository name to lowercase
+      run: |
+        echo "REPONAME_LC=${REPONAME,,}" >> $GITHUB_ENV
       
     # 도커 이미지 빌드
     - name: Build Docker image
       run: |
-        docker build -t ghcr.io/${{ github.repository }}:latest .
+        docker build -t ghcr.io/${{ env.REPONAME_LC }}:latest .
 
     # 이미지 푸시
     - name: Push Docker image to ghcr
       run: |
-        docker push ghcr.io/${{ github.repository }}:latest
+        docker push ghcr.io/${{ env.REPONAME_LC }}:latest
     
     # 기존 컨테이너 종료 후 새 이미지 실행
     - name: SSH to GCP VM and deploy container
@@ -72,9 +79,9 @@ jobs:
         script: |
           docker stop django-container || true
           docker rm django-container || true
-          docker pull ghcr.io/${{ github.repository }}:latest
+          docker pull ghcr.io/${{ env.REPONAME_LC }}:latest
           docker run -d \
             --name django-container \
             -p 8000:8000 \
             --env-file /home/${{ secrets.SSH_USER }}/.env \
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ env.REPONAME_LC }}:latest
