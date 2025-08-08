@@ -83,5 +83,5 @@ jobs:
           docker run -d \
             --name django-container \
             -p 8000:8000 \
-            --env-file /home/${{ secrets.SSH_USER }}/.env \
+            --env-file /home/jib_backend/github_actions_test/.env \
             ghcr.io/${{ env.REPONAME_LC }}:latest
