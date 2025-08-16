@@ -13,7 +13,7 @@ class TestViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "name": "user",
-                "message": "hello, there",
+                "message": "hello, world",
                 "image": os.getenv('img_url'),
             },
             status=status.HTTP_200_OK,
