@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from mongoengine import connect, register_connection
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -85,6 +86,17 @@ DATABASES = {
     }
 }
 
+register_connection(
+    db='resume', # 데이터베이스 이름
+    alias='default',
+    host='mongodb://127.0.0.1:27017',  # MongoDB URI
+)
+
+register_connection(
+    db='users',
+    alias='users',
+    host='mongodb://127.0.0.1:27017',  # MongoDB URI
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
